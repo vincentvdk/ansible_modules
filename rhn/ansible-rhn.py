@@ -51,9 +51,6 @@ def unsubscribeChannels(channels):
 # ------------------------------------------------------- #
 
 def baseChannels(system):
-    #for system in systems:
-    #    if system.get('name') == host:
-    #        sys_id = system.get('id')
     sys_id = getSystemId()
     basechan = client.channel.software.listSystemChannels(session, sys_id)
     chans = [item['channel_label'] for item in basechan]
@@ -68,7 +65,6 @@ def main():
             state     = dict(default='present', choices=['present', 'absent']),
             name      = dict(required=True),
         )
-#        supports_check_mode=True
     )
     
     channelname = module.params['name']
@@ -76,7 +72,6 @@ def main():
 
     chans = baseChannels(host)
     
-    #module.exit_json(changed=True, msg="Subscribed to Channel %s" % chanss)
 
     if state == 'present':
         if channelname in chans:
