@@ -6,4 +6,8 @@ My Ansible modules
 rhn
 ---
 This module allows you to add or remove software channels of a rhn subscribed
-host
+host. Currently included in Ansible
+
+ovirt
+----
+Module to do management of the oVirt platform.
