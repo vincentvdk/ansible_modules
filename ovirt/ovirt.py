@@ -17,18 +17,32 @@ def conn(url, user, password):
 # ------------------------------------------------------------------- #
 # VM operations
 #
-# def create_vm():
-#def create_vm(conn, vmname, 
+#def create_vm(conn, vmname, ):
 
-# start vm
+# create an instance from a template
+def create_vm_template(conn, vmname, image, zone):
+    vmparams = params.VM(name=vmname, cluster=conn.clusters.get(name=zone), template=conn.templates.get(name=image))
+    try:
+        conn.vms.add(vmparams)
+    except:
+        print 'error adding template %s' % image
+        sys.exit(1)
+
+
+# start instance
 def vm_start(conn, vmname):
     vm = conn.vms.get(name=vmname)
     vm.start()
 
-# Stop vm
+# Stop instance
 def vm_stop(conn, vmname):
     vm = conn.vms.get(name=vmname)
     vm.stop()
+
+# remove an instance
+def vm_remove(conn, vmname):
+    vm = conn.vms.get(name=vmname)
+    vm.delete()
 
 # ------------------------------------------------------------------- #
 # VM statuses
@@ -52,6 +66,12 @@ def get_vm(conn, vmname):
     return name
 
 # ------------------------------------------------------------------- #
+# Hypervisor operations
+#
+
+
+
+# ------------------------------------------------------------------- #
 # Main
 
 def main():
@@ -68,7 +88,8 @@ def main():
             instance_type = dict(choices=['new', 'template']),
             zone = dict(),
             disk_size = dict(),
-            cpus = dict(),
+            cpu = dict(),
+            nic = dict(),
         )
     )
 
@@ -80,6 +101,9 @@ def main():
     image         = module.params['image']
     instance_type = module.params['instance_type']
     zone          = module.params['zone']   # cluster
+    disk_size     = module.params['disk_size']
+    cpu           = module.params['cpu']
+    nic           = module.params['nic']
 
 
     #initialize connection
@@ -87,7 +111,9 @@ def main():
 
     if state == 'present':
         if get_vm(c, vmname) == "empty":
-            module.exit_json(changed=True, msg="we need to create VM %s" % vmname)
+            if instance_type == 'template':
+                create_vm_template(c, vmname, image, zone)
+                module.exit_json(changed=True, msg="created VM %s from template %s"  % (vmname,image))
         else:
             module.exit_json(changed=False, msg="VM %s already exists" % vmname)
 
@@ -97,13 +123,20 @@ def main():
         else:
             vm_start(c, vmname)
             module.exit_json(changed=True, msg="VM %s started" % vmname)
-    
+
     if state == 'shutdown':
         if vm_status(c, vmname) == 'down':
             module.exit_json(changed=False, msg="VM %s is already shutdown" % vmname)
         else:
             vm_stop(c, vmname)
             module.exit_json(changed=True, msg="VM %s is shutting down" % vmname)
+
+    if state == 'absent':
+        if get_vm(c, vmname) == "empty":
+            module.exit_json(changed=False, msg="VM %s does not exist" % vmname)
+        else:
+            vm_remove(c, vmname)
+            module.exit_json(changed=True, msg="VM %s removed" % vmname)
 
 
 
